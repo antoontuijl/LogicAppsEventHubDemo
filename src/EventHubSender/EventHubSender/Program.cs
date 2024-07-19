@@ -7,8 +7,8 @@ namespace EventHubSender
 {
     class Program
     {
-        private const string eventHubNamespaceFqdn = "lip-aanvragen-eh-dev.servicebus.windows.net";  // Replace with your Event Hub namespace FQDN
-        private const string eventHubName = "aanvragen";  // Replace with your Event Hub name
+        private const string eventHubNamespaceFqdn = "myeventhubns.servicebus.windows.net";  // Replace with your Event Hub namespace FQDN
+        private const string eventHubName = "eventhub";  // Replace with your Event Hub name
 
         static async Task Main(string[] args)
         {
