@@ -1,0 +1,12 @@
+﻿{
+  "aanvraag": {
+    "aansluitingsObjecten": [
+      {
+        "disciplineIds": [ 100032534 ],
+        "objectId": 100032532
+      }
+    ],
+    "aanvraagId": 100053232
+  },
+  "operation": "AanvraagIngediend"
+}

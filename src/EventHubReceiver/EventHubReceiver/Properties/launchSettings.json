@@ -1,0 +1,16 @@
+{
+  "profiles": {
+    "EventHubReceiver": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7118",
+      "environmentVariables": {
+        "EventHub:EventHubNamespace": "",
+        "EventHub:EventHubName": "",
+        "EventHub:TenantId": "",
+        "EventHub:ClientId": "",
+        "EventHub:ClientSecret": "",
+        "EventHubConsumerCron": "* * * * *"
+      }
+    }
+  }
+}
