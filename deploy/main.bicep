@@ -24,6 +24,33 @@ module eventHub 'event-hub.bicep' = {
     ]
 }
 
+var storageAccountName = 'lipeventhubstorage'
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
+    name: storageAccountName
+    location: location
+    sku: {
+        name:'Standard_LRS'
+    }
+   kind: 'StorageV2'
+}
+
+
+resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01' = {
+    name: 'default'
+    parent: storageAccount
+  }
+  
+ 
+  var containerName = 'checkpoints'
+  resource containers 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+    name: containerName
+    parent: blobServices
+    properties: {
+      publicAccess: 'None'
+      metadata: {}
+    }
+  }
+
 /*
 manually deploy this file using the Azure CLI:
 

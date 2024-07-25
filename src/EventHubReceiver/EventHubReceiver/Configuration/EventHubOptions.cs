@@ -9,5 +9,9 @@
         public string TenantId { get; set; }
         public string ClientId { get; set; }
         public string ClientSecret { get; set; }
+        public string EventHubConnectionString { get; set; }
+        public string CheckpointConnectionString { get; set; }
+        public string CheckpointContainer { get; set; }
+        public int EventHubReceiverWaitTimeInSeconds { get; set; }
     }
 }

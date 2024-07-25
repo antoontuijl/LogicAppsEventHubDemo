@@ -16,10 +16,13 @@ namespace EventHubReceiver
         }
 
         [Function(nameof(EventHubConsumer))]
-        public async Task RunAsync([TimerTrigger("%EventHubConsumerCron%")] TimerInfo myTimer)
+        //[ServiceBusOutput("lip.onramp.aansluitaanvraag", Connection = "ServiceBusConnection")]
+        //[QueueOutput("lip.onramp.aansluitaanvraag")]
+        public async Task RunAsync([TimerTrigger("* * * * *")] TimerInfo myTimer)
         {
             // Receive events
-            var events = await _eventHubConsumerService.ReceiveEvents();
+            using CancellationTokenSource cancellationSource = new();
+            var events = await _eventHubConsumerService.ReceiveEvents(cancellationSource);
 
             foreach (var @event in events)
             {

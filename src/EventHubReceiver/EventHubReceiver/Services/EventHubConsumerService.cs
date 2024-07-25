@@ -1,5 +1,8 @@
-﻿using Azure.Messaging.EventHubs;
+﻿using System.Text;
+using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Consumer;
+using Azure.Messaging.EventHubs.Processor;
+using Azure.Storage.Blobs;
 using EventHubReceiver.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -17,45 +20,59 @@ namespace EventHubReceiver.Services
             _logger = logger;
         }
 
-        public async Task<IEnumerable<string>> ReceiveEvents()
+        public async Task<IEnumerable<string>> ReceiveEvents(CancellationTokenSource cancellationSource)
         {
             List<string> events = new();
+            
+            var storageClient =
+                new BlobContainerClient(_options.CheckpointConnectionString, _options.CheckpointContainer);
 
-            EventHubConsumerClient consumerClient = new(
+            var processor = new EventProcessorClient(
+                storageClient,
                 EventHubConsumerClient.DefaultConsumerGroupName,
-                _options.EventHubNamespace,
-                _options.EventHubName,
-                new Azure.Identity.ClientSecretCredential(
-                    _options.TenantId,
-                    _options.ClientId,
-                    _options.ClientSecret
-                ),
-                new EventHubConsumerClientOptions
-                {
-                    ConnectionOptions = new EventHubConnectionOptions
-                    {
-                        TransportType = EventHubsTransportType.AmqpWebSockets
-                    }
-                });
-
+                _options.EventHubConnectionString);
+            
             try
             {
+                processor.ProcessEventAsync += ProcessEventHandler;
+                processor.ProcessErrorAsync += ProcessErrorHandler;
 
-                // Receive events from the event hub 
-                await foreach (PartitionEvent partitionEvent in consumerClient.ReadEventsAsync())
+                try
                 {
-                    // Process the received event 
-                    var @event = partitionEvent.Data.EventBody.ToString();
-                    events.Add(@event);
+                    await processor.StartProcessingAsync(cancellationSource.Token);
+                    await Task.Delay(TimeSpan.FromSeconds(_options.EventHubReceiverWaitTimeInSeconds));
                 }
-
+                catch (TaskCanceledException)
+                {
+                    // This is expected if the cancellation token is
+                    // signaled.
+                }
+                finally
+                {
+                    await processor.StopProcessingAsync(cancellationSource.Token);
+                }
             }
             finally
             {
-                // Close the consumer client 
-                await consumerClient.CloseAsync();
+                processor.ProcessEventAsync -= ProcessEventHandler;
+                processor.ProcessErrorAsync -= ProcessErrorHandler;
             }
 
+            async Task ProcessEventHandler(ProcessEventArgs eventArgs)
+            {
+                string @event = Encoding.UTF8.GetString(eventArgs.Data.Body.ToArray());
+                events.Add(@event);
+                
+                await eventArgs.UpdateCheckpointAsync(cancellationSource.Token);
+            }
+
+            Task ProcessErrorHandler(ProcessErrorEventArgs eventArgs)
+            {
+                _logger.LogCritical($"\tPartition '{eventArgs.PartitionId}': an unhandled exception was encountered. This was not expected to happen.");
+
+                return Task.CompletedTask;
+            }
+        
             return events;
         }
     }
